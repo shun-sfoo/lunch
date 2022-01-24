@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::errors::FetchError;
+use crate::error::FetchError;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{Event, HtmlInputElement, Request, RequestInit, RequestMode, Response};

@@ -1,6 +1,9 @@
 use gloo::storage::{LocalStorage, Storage};
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
+use serde::{de::DeserializeOwned, Serialize};
+
+use crate::error::Error;
 
 const TOKEN_KEY: &str = "yew.token";
 
@@ -24,4 +27,12 @@ pub fn set_token(token: Option<String>) {
 
     let mut token_lock = TOKEN.write();
     *token_lock = token;
+}
+
+pub async fn request_post<B, T>(url: String, body: B) -> Result<T, Error>
+where
+    T: DeserializeOwned + 'static + std::fmt::Debug,
+    B: Serialize + std::fmt::Debug,
+{
+    todo!()
 }

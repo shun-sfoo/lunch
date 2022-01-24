@@ -1,7 +1,8 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-mod errors;
+mod components;
+mod error;
 mod hooks;
 mod pages;
 mod routes;

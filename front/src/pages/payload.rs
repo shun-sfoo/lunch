@@ -7,7 +7,7 @@ use web_sys::{Request, RequestInit, RequestMode, Response};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 
-use crate::errors::FetchError;
+use crate::error::FetchError;
 
 const OMAHA_URL: &str = "https://block-tools.damopan.com.cn";
 
