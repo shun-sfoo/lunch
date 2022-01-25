@@ -24,3 +24,51 @@ async fn main() {
     let _ = setup::create_user_table(&conn).await;
     let _ = setup::create_payload_table(&conn).await;
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Instant;
+
+    use serde::Serialize;
+    use tera::Tera;
+
+    use super::*;
+
+    #[derive(Serialize)]
+    pub struct Data {
+        pub elapsed_days: String,
+        pub appid: String,
+        pub codebase: String,
+        pub run: String,
+        pub metadata_size: String,
+        pub sha256: String,
+        pub fp: String,
+        pub hash_sha256: String,
+    }
+
+    #[test]
+    fn test_name() {
+        let mut ctx = tera::Context::new();
+        let templates = Tera::new("templates/**/*.xml").unwrap();
+        let data = Data {
+            elapsed_days: "1".to_string(),
+            appid: "2".to_string(),
+            codebase: "3".to_string(),
+            run: "4".to_string(),
+            metadata_size: "5".to_string(),
+            sha256: "6".to_string(),
+            fp: "7".to_string(),
+            hash_sha256: "8".to_string(),
+        };
+
+        let start = Instant::now();
+        ctx.insert("data", &data);
+
+        let body = templates.render("update.xml", &ctx).unwrap();
+
+        let duration = start.elapsed();
+
+        println!("Time elapsed in expensive_function() is: {:?}", duration);
+        println!("{:?}", body);
+    }
+}
