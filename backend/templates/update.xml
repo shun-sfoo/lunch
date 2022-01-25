@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response protocol="3.0" server="nebraska">
+  <daystart elapsed_days="{{ data.elapsed_days }}" elapsed_seconds="{{ data.elapsed_days }}"/>
+  <app appid="{{ data.appid }}" status="ok">
+    <ping status="ok"/>
+    <updatecheck status="ok">
+      <urls>
+        <url codebase="{{ data.codebase }}"/>
+      </urls>
+      <manifest version="99999.0.0">
+        <actions>
+          <action event="update" run="{{ data.run }}"/>
+          <action ChromeOSVersion="99999.0.0" ChromeVersion="1.0.0.0" DisablePayloadBackoff="false" IsDeltaPayload="false" MaxDaysToScatter="14" MetadataSignatureRsa="" MetadataSize="{{ data.MetadataSize }}" sha256="{{ data.sha256 }}" event="postinstall"/>
+        </actions>
+        <packages>
+          <package fp="{{ data.fp }}" hash_sha256="{{ data.hash_sha256 }}" name="{{ data.run }}" required="true" size="653474911"/>
+        </packages>
+      </manifest>
+    </updatecheck>
+  </app>
+</response>
+

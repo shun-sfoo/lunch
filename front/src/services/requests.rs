@@ -1,11 +1,12 @@
+use crate::{error::Error, types::ErrorInfo};
+use dotenv_codegen::dotenv;
 use gloo::storage::{LocalStorage, Storage};
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::error::Error;
-
 const TOKEN_KEY: &str = "yew.token";
+const API_ROOT: &str = dotenv!("API_ROOT");
 
 lazy_static! {
     /// JWT token read from local storage
@@ -29,10 +30,68 @@ pub fn set_token(token: Option<String>) {
     *token_lock = token;
 }
 
+pub fn get_token() -> Option<String> {
+    let token_lock = TOKEN.read();
+    return token_lock.clone();
+}
+
+pub async fn request<B, T>(method: reqwest::Method, url: String, body: B) -> Result<T, Error>
+where
+    T: DeserializeOwned + 'static + std::fmt::Debug,
+    B: Serialize + std::fmt::Debug,
+{
+    let allow_body = method == reqwest::Method::POST || method == reqwest::Method::PUT;
+    let url = format!("{}{}", API_ROOT, url);
+    let mut builder = reqwest::Client::new()
+        .request(method, url)
+        .header("Content-Type", "application/json");
+
+    if let Some(token) = get_token() {
+        builder = builder.bearer_auth(token);
+    }
+
+    if allow_body {
+        builder = builder.json(&body);
+    }
+
+    let response = builder.send().await;
+
+    if let Ok(data) = response {
+        if data.status().is_success() {
+            let data: Result<T, _> = data.json::<T>().await;
+            if let Ok(data) = data {
+                log::debug!("Response: {:?}", data);
+                Ok(data)
+            } else {
+                Err(Error::DeserializeError)
+            }
+        } else {
+            match data.status().as_u16() {
+                401 => Err(Error::Unauthorized),
+                403 => Err(Error::Forbidden),
+                404 => Err(Error::NotFound),
+                500 => Err(Error::InternalServerError),
+                422 => {
+                    let data: Result<ErrorInfo, _> = data.json::<ErrorInfo>().await;
+                    if let Ok(data) = data {
+                        Err(Error::UnprocessableEntity(data))
+                    } else {
+                        Err(Error::DeserializeError)
+                    }
+                }
+
+                _ => Err(Error::RequestError),
+            }
+        }
+    } else {
+        Err(Error::RequestError)
+    }
+}
+
 pub async fn request_post<B, T>(url: String, body: B) -> Result<T, Error>
 where
     T: DeserializeOwned + 'static + std::fmt::Debug,
     B: Serialize + std::fmt::Debug,
 {
-    todo!()
+    request(reqwest::Method::POST, url, body).await
 }

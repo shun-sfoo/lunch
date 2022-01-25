@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response protocol="3.0" server="nebraska">
+  <daystart elapsed_days="{{ data.elapsed_days }}" elapsed_seconds="{{ data.elapsed_seconds }}"/>
+  <app appid="{{ data.appid }}" status="ok">
+    <event status="ok"/>
+  </app>
+</response>

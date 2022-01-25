@@ -1,5 +1,5 @@
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{FocusEvent, HtmlInputElement, InputEvent};
+use web_sys::HtmlInputElement;
 
 use crate::components::list_errors::ListErrors;
 use crate::services::auth::*;
@@ -26,6 +26,7 @@ pub fn login() -> Html {
             };
 
             let user_ctx = user_ctx.clone();
+            let error = error.clone();
             spawn_local(async move {
                 let user_info = login(request).await;
                 match user_info {
