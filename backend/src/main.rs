@@ -1,28 +1,47 @@
+use axum::{
+    routing::{get, post},
+    AddExtensionLayer, Router, Server,
+};
+use omaha::{health_check, update};
 use sea_orm::Database;
-use std::env;
+use std::{env, net::SocketAddr, str::FromStr};
 
 mod entity;
 mod omaha;
 mod setup;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
+    // 设置日志，测试等级为debug
     env::set_var("RUST_LOG", "debug");
     tracing_subscriber::fmt::init();
 
+    // 获取环境参数
     dotenv::dotenv().ok();
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
     let host = env::var("HOST").expect("HOST is not set in .env file");
     let port = env::var("PORT").expect("PORT is not set in .env file");
     let server_url = format!("{}:{}", host, port);
 
+    // 数据库链接
     let conn = Database::connect(db_url)
         .await
         .expect("Database connection failed");
 
+    // 初始化数据库 todo 冗余代码， 通过过程宏改写
     let _ = setup::create_post_table(&conn).await;
     let _ = setup::create_user_table(&conn).await;
     let _ = setup::create_payload_table(&conn).await;
+
+    let app = Router::new()
+        .route("/", get(health_check))
+        .route("/update", post(update))
+        .layer(AddExtensionLayer::new(conn));
+
+    let addr = SocketAddr::from_str(&server_url).unwrap();
+    Server::bind(&addr).serve(app.into_make_service()).await?;
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -31,8 +50,6 @@ mod tests {
 
     use serde::Serialize;
     use tera::Tera;
-
-    use super::*;
 
     #[derive(Serialize)]
     pub struct Data {

@@ -18,6 +18,8 @@ tower-http = { version = "0.2.1", features = ["fs"] }
 tower-cookies = "0.4.1"
 tracing-subscriber = "0.3.6"
 chrono = { version = "0.4.19", features = ["serde"] }
+quick-xml = { version = "0.22.0", features = ["serialize"] }
+tracing = "0.1.29"
 
 [dependencies.sea-orm]
 version = "^0.5.0"
