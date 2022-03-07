@@ -4,36 +4,23 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[lib]
-proc-macro = true
 
 [dependencies]
-anyhow = "1.0.53"
-axum = "0.4.5"
-dotenv = "0.15.0"
-serde = "1.0.136"
-serde_json = "1.0.78"
-tera = "1.15.0"
-tokio = { version = "1.16.1", features = ["full"] }
-tower = "0.4.11"
-tower-http = { version = "0.2.1", features = ["fs"] }
-tower-cookies = "0.4.1"
-tracing-subscriber = "0.3.7"
+async-trait = "0.1.52"
+axum = { version = "0.4.8", features = ["multipart", "headers"] }
 chrono = { version = "0.4.19", features = ["serde"] }
-quick-xml = { version = "0.22.0", features = ["serialize"] }
-tracing = "0.1.29"
-quote = "1.0.15"
-proc-macro2 = "1.0.36"
-darling = "0.13.1"
-syn = { version = "1.0.86", features = ["extra-traits"] }
-heck = "0.4.0"
+dotenv = "0.15.0"
+reqwest = { version = "0.11.9", features = ["multipart"] }
+rust-crypto = "0.2.36"
+sea-orm = { version = "0.6.0", features = ["sqlx-postgres", "runtime-tokio-native-tls", "macros", "debug-print"] }
+serde = "1.0.136"
+serde_json = "1.0.79"
+thiserror = "1.0.30"
+tokio = { version = "1.17.0", features = ["full"] }
+tower = "0.4.12"
+tower-http = { version = "0.2.4", features = ["fs"] }
+tracing = "0.1.31"
+tracing-subscriber = "0.3.9"
 
-[dependencies.sea-orm]
-version = "0.5.0"
-features = ["macros", "runtime-tokio-native-tls", "debug-print"]
-default-features = false
-
-[features]
-default = ["sqlx-postgres"]
-sqlx-mysql = ["sea-orm/sqlx-mysql"]
-sqlx-postgres = ["sea-orm/sqlx-postgres"]
+[dev-dependencies]
+reqwest = { version = "0.11.9", features = ["blocking"] }
