@@ -3,7 +3,10 @@ use std::{env, net::SocketAddr};
 use axum::{extract::Extension, routing::get, Router};
 use error::AppError;
 use sea_orm::{Database, DatabaseConnection};
+mod ar;
 mod error;
+mod service;
+mod setup;
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
@@ -15,6 +18,8 @@ async fn main() -> Result<(), AppError> {
     tracing_subscriber::fmt::init();
 
     let conn = get_connection().await?;
+    let _exec = setup::create_user_table(&conn).await?;
+
     let app = Router::new().route("/", get(login)).layer(Extension(conn));
     let addr = SocketAddr::from(([0, 0, 0, 0], 8555));
     tracing::debug!("listening on {}", addr);

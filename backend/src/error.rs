@@ -6,6 +6,8 @@ pub enum AppError {
     MissingEnvParam(String),
     #[error("database connect error")]
     DbConnect,
+    #[error("create table {0} error")]
+    CreatTable(String),
     #[error("axum make into service error")]
     Serve,
 }
