@@ -1,10 +1,20 @@
 use std::{env, net::SocketAddr};
 
-use axum::{extract::Extension, routing::get, Router};
+use axum::{
+    extract::Extension,
+    http::Method,
+    routing::{get, post},
+    Router,
+};
 use error::AppError;
 use sea_orm::{Database, DatabaseConnection};
+use tower_http::cors::{Any, CorsLayer};
+
+use crate::handler::{me, register};
 mod ar;
 mod error;
+mod handler;
+mod model;
 mod service;
 mod setup;
 
@@ -20,8 +30,19 @@ async fn main() -> Result<(), AppError> {
     let conn = get_connection().await?;
     let _exec = setup::create_user_table(&conn).await?;
 
-    let app = Router::new().route("/", get(login)).layer(Extension(conn));
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8555));
+    let cors = CorsLayer::new()
+        .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
+        // .allow_origin(Origin::exact("http://localhost:3000".parse().unwrap()));
+        .allow_origin(Any)
+        .allow_headers(Any);
+
+    let app = Router::new()
+        .route("/", get(login))
+        .route("/me", get(me))
+        .route("/register", post(register))
+        .layer(Extension(conn))
+        .layer(cors);
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     tracing::debug!("listening on {}", addr);
 
     // run our app with hyper
