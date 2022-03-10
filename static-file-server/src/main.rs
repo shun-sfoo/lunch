@@ -1,19 +1,22 @@
-use std::{env, net::SocketAddr, path::Path};
+use std::{env, ffi::OsStr, net::SocketAddr, path::Path};
 
 use axum::{
     body::Body,
     extract::Extension,
-    http::{Request, StatusCode},
+    http::{Method, Request, StatusCode},
     response::{Html, IntoResponse},
     routing::get,
-    Router, Server,
+    Json, Router, Server,
 };
 use error::AppError;
 use serde::Serialize;
 use tera::Tera;
 use tokio::fs;
 use tower::ServiceExt;
-use tower_http::services::ServeDir;
+use tower_http::{
+    cors::{Any, CorsLayer},
+    services::ServeDir,
+};
 use tracing::info;
 mod error;
 
@@ -24,16 +27,14 @@ async fn main() {
     dotenv::dotenv().ok();
 
     tracing_subscriber::fmt::init();
-
-    let templates_dir = env::var("TEMPLATES_DIR").unwrap_or(env!("CARGO_MANIFEST_DIR").to_string());
-    info!(?templates_dir);
-    let templates = Tera::new(&format!("{}/templates/**/*.html", templates_dir))
-        .expect("Tera initialization failed");
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(vec![Method::GET]);
 
     let app = Router::new()
-        .route("/", get(list))
-        .fallback(get(download))
-        .layer(Extension(templates));
+        .route("/", get(index_or_content))
+        .layer(cors)
+        .fallback(get(download));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 9000));
 
@@ -47,6 +48,56 @@ async fn main() {
 struct FileInfo {
     name: String,
     path_uri: String,
+}
+
+#[derive(Serialize)]
+struct PathInfo {
+    name: String,
+    path_uri: String,
+    ext: String,
+    is_file: bool,
+    last_modified: i64,
+}
+
+async fn index_or_content() -> impl IntoResponse {
+    let local_dir = ".";
+    let path = Path::new(&local_dir);
+    let mut dir = fs::read_dir(path)
+        .await
+        .map_err(|_| AppError::Path(local_dir.into()))
+        .unwrap();
+
+    let mut files: Vec<PathInfo> = Vec::new();
+
+    while let Some(child) = dir.next_entry().await.unwrap() {
+        let name = child.file_name().to_string_lossy().to_string();
+        let path_uri = format!("images/{}", name);
+        let ext = Path::new(child.file_name().to_str().unwrap())
+            .extension()
+            .and_then(OsStr::to_str)
+            .unwrap_or_default()
+            .to_string();
+        let is_file = child.file_type().await.unwrap().is_file();
+        let last_modified = child
+            .metadata()
+            .await
+            .unwrap()
+            .modified()
+            .unwrap()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        files.push(PathInfo {
+            name,
+            path_uri,
+            ext,
+            is_file,
+            last_modified,
+        });
+    }
+
+    Json(files)
 }
 
 async fn download(req: Request<Body>) -> impl IntoResponse {
