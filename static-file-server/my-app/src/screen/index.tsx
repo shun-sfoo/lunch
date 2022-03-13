@@ -10,6 +10,7 @@ import {
   UploadOutlined,
 } from '@ant-design/icons';
 import styled from '@emotion/styled';
+import qs from 'qs';
 
 interface PathList {
   list: {
@@ -63,9 +64,21 @@ export const PathList = ({ list }: PathList) => {
               <List.Item.Meta
                 avatar={<Avatar icon={get_icon(item.is_file, item.ext)} />}
                 title={
-                  <a href={'http:/localhost:9000/' + item.path_uri}>
+                  <Button
+                    type="link"
+                    onClick={() => {
+                      window
+                        .fetch(
+                          `http://localhost:9000/file?${qs.stringify(item)}`
+                        )
+                        .then(async (response) => {
+                          const data = await response.json();
+                          console.log(data);
+                        });
+                    }}
+                  >
                     {item.name}
-                  </a>
+                  </Button>
                 }
                 description={item.last_modified}
               />
