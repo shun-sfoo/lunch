@@ -1,4 +1,5 @@
 use clap::Parser;
+use local_ip_address::local_ip;
 use rust_embed::RustEmbed;
 use std::{env, ffi::OsStr, net::SocketAddr, path::Path, sync::Arc};
 
@@ -7,20 +8,18 @@ use axum::{
     extract::Extension,
     handler::Handler,
     http::{header, Method, Request, Response, StatusCode, Uri},
-    response::{Html, IntoResponse},
+    response::IntoResponse,
     routing::get,
     Json, Router, Server,
 };
 use error::AppError;
 use serde::{Deserialize, Serialize};
-use tera::Tera;
 use tokio::fs;
 use tower::ServiceExt;
 use tower_http::{
     cors::{Any, CorsLayer},
-    services::{ServeDir, ServeFile},
+    services::ServeFile,
 };
-use tracing::info;
 mod error;
 
 #[derive(RustEmbed)]
@@ -48,6 +47,13 @@ async fn main() {
     let args = Args::parse();
     tracing::debug!(?args);
 
+    let my_local_ip = local_ip().unwrap().to_string();
+    let api_url = my_local_ip + ":" + &args.port.to_string();
+
+    tracing::debug!(?api_url);
+
+    env::set_var("REACT_APP_API_URL", api_url);
+
     let mut root_dir = args.root_dir;
     if root_dir != "/" {
         root_dir = root_dir.trim_end_matches('/').to_string();
@@ -65,18 +71,12 @@ async fn main() {
         .fallback(static_handler.into_service())
         .layer(Extension(Arc::new(StaticServerConfig { root_dir })));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 9000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], args.port.into()));
 
     Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct FileInfo {
-    name: String,
-    path_uri: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -93,6 +93,7 @@ async fn index_handler() -> impl IntoResponse {
 }
 
 async fn static_handler(uri: Uri) -> impl IntoResponse {
+    tracing::debug!(?uri);
     let mut path = uri.path().trim_start_matches('/').to_string();
     if path.starts_with("dist/") {
         path = path.replace("dist/", "");
@@ -132,26 +133,24 @@ async fn file(
     Extension(cfg): Extension<Arc<StaticServerConfig>>,
 ) -> impl IntoResponse {
     tracing::debug!(?data);
-    // let p = ServeDir::new(".").o
-
-    let res = ServeFile::new((&cfg.root_dir).to_string() + "/" + &data.name);
-    // let t = res.map(axum::body::boxed);
     // 去看 notion 文档
-    todo!()
+    let svc = ServeFile::new((&cfg.root_dir).to_string() + "/" + &data.name);
+    let res = svc.oneshot(Request::new(Body::empty())).await.unwrap();
+    res.map(axum::body::boxed)
 }
 
 async fn index_or_content(Extension(cfg): Extension<Arc<StaticServerConfig>>) -> impl IntoResponse {
     let path = Path::new(&cfg.root_dir);
     let mut dir = fs::read_dir(path)
         .await
-        .map_err(|_| AppError::Path(&cfg.root_dir.into()))
+        .map_err(|_| AppError::Path((&cfg.root_dir).to_string()))
         .unwrap();
 
     let mut files: Vec<PathInfo> = Vec::new();
 
     while let Some(child) = dir.next_entry().await.unwrap() {
         let name = child.file_name().to_string_lossy().to_string();
-        let path_uri = name;
+        let path_uri = name.clone();
         let ext = Path::new(child.file_name().to_str().unwrap())
             .extension()
             .and_then(OsStr::to_str)
@@ -178,51 +177,4 @@ async fn index_or_content(Extension(cfg): Extension<Arc<StaticServerConfig>>) ->
     }
 
     Json(files)
-}
-
-async fn download(req: Request<Body>) -> impl IntoResponse {
-    let image_dir = env::var("IMAGE_DIR")
-        .map_err(|_| AppError::MissingEnvParam("IMAGE_DIR".into()))
-        .unwrap();
-    let image_dir = &image_dir[0..image_dir.len() - 7];
-    info!(?image_dir);
-    let path = req.uri().path().to_string();
-    info!(?path);
-
-    return match ServeDir::new(image_dir).oneshot(req).await {
-        Ok(res) => Ok(res.map(axum::body::boxed)),
-        Err(e) => Err(format!("{}", e)),
-    };
-}
-
-async fn list(
-    Extension(ref template): Extension<Tera>,
-) -> Result<Html<String>, (StatusCode, &'static str)> {
-    let image_dir = env::var("IMAGE_DIR")
-        .map_err(|_| AppError::MissingEnvParam("IMAGE_DIR".into()))
-        .unwrap();
-
-    let path = Path::new(&image_dir);
-
-    let mut dir = fs::read_dir(path)
-        .await
-        .map_err(|_| AppError::Path(image_dir.into()))
-        .unwrap();
-
-    let mut files: Vec<FileInfo> = Vec::new();
-
-    while let Some(child) = dir.next_entry().await.unwrap() {
-        let name = child.file_name().to_string_lossy().to_string();
-        let path_uri = format!("images/{}", name);
-        files.push(FileInfo { name, path_uri });
-    }
-
-    let mut ctx = tera::Context::new();
-    ctx.insert("files", &files);
-
-    let body = template
-        .render("list.html", &ctx)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "template Error"))?;
-
-    Ok(Html(body))
 }

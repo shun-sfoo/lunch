@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import styled from '@emotion/styled';
 import qs from 'qs';
+import { blob } from 'stream/consumers';
 
 interface PathList {
   list: {
@@ -21,6 +22,8 @@ interface PathList {
     last_modified: string;
   }[];
 }
+
+const apiUrl = process.env.REACT_APP_API_URL;
 
 const get_icon = (is_file: boolean, ext: string) => {
   if (is_file) {
@@ -68,12 +71,15 @@ export const PathList = ({ list }: PathList) => {
                     type="link"
                     onClick={() => {
                       window
-                        .fetch(
-                          `http://localhost:9000/file?${qs.stringify(item)}`
-                        )
+                        .fetch(`${apiUrl}/file?${qs.stringify(item)}`)
                         .then(async (response) => {
-                          const data = await response.json();
-                          console.log(data);
+                          response.blob().then((blob) => {
+                            let url = window.URL.createObjectURL(blob);
+                            let a = document.createElement('a');
+                            a.href = url;
+                            a.download = item.name;
+                            a.click();
+                          });
                         });
                     }}
                   >
