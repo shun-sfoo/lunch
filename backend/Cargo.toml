@@ -11,7 +11,7 @@ axum = { version = "0.4.8", features = ["multipart", "headers"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 dotenv = "0.15.0"
 jsonwebtoken = "8.0.1"
-reqwest = { version = "0.11.9", features = ["multipart"] }
+reqwest = { version = "0.11.10", features = ["multipart"] }
 rust-crypto = "0.2.36"
 sea-orm = { version = "0.6.0", features = ["sqlx-postgres", "runtime-tokio-native-tls", "macros", "debug-print"], default-features = false }
 serde = "1.0.136"
@@ -19,10 +19,10 @@ serde_json = "1.0.79"
 thiserror = "1.0.30"
 tokio = { version = "1.17.0", features = ["full"] }
 tower = "0.4.12"
-tower-http = { version = "0.2.4", features = ["fs", "cors"] }
-tracing = "0.1.31"
+tower-http = { version = "0.2.5", features = ["fs", "cors"] }
+tracing = "0.1.32"
 tracing-subscriber = "0.3.9"
 
 [dev-dependencies]
-reqwest = { version = "0.11.9", features = ["blocking"] }
+reqwest = { version = "0.11.10", features = ["blocking"] }
 

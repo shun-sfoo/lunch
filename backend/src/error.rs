@@ -5,14 +5,19 @@ use thiserror::Error;
 pub enum AppError {
     #[error("missing param {0} in environment")]
     MissingEnvParam(String),
+    #[error("axum make into service error")]
+    Serve,
     #[error("database connect error")]
     DbConnect,
     #[error("create table {0} error")]
     CreatTable(String),
-    #[error("axum make into service error")]
-    Serve,
+    #[error("select {0} by {1} error")]
+    Find(String, String),
+    #[error("create {0} by {1} error")]
+    Create(String, String),
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum HttpError {
     Auth,     // 401

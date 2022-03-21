@@ -15,6 +15,7 @@ const bootstrapUser = async () => {
   const token = auth.getToken();
   if (token) {
     const data = await http('me', { token });
+    console.log('bootstrap', data);
     user = data.user;
   }
 

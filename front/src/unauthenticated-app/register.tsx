@@ -3,7 +3,7 @@ import { useAuth } from 'context/auth-context';
 import { Form, Input } from 'antd';
 import { LongButton } from 'unauthenticated-app';
 export const RegisterScreen = () => {
-  const { register, user } = useAuth();
+  const { register } = useAuth();
 
   const handleSubmit = (values: { username: string; password: string }) => {
     register(values);

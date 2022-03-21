@@ -13,8 +13,8 @@ const SECRET: &[u8] = b"deadbeef";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    id: i32,
-    username: String,
+    pub id: i32,
+    pub username: String,
     exp: i64,
 }
 
