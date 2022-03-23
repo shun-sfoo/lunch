@@ -18,6 +18,24 @@ pub struct Claims {
     exp: i64,
 }
 
+impl Claims {
+    pub fn new(id: i32, username: String) -> Self {
+        Claims {
+            id,
+            username,
+            exp: get_epoch() + 14 * 24 * 60 * 60,
+        }
+    }
+}
+
+fn get_epoch() -> i64 {
+    use std::time::SystemTime;
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64
+}
+
 #[async_trait]
 impl<B> FromRequest<B> for Claims
 where

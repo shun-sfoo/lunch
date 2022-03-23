@@ -7,7 +7,7 @@ use tracing::info;
 
 use crate::{
     model::{Claims, User},
-    service::UserService,
+    service::{ClaimService, UserService},
 };
 
 pub async fn me(claims: Claims, Extension(ref conn): Extension<DbConn>) -> Json<Option<User>> {
@@ -30,16 +30,17 @@ pub async fn register(
     info!(?data);
     let name = data.get("username").unwrap();
     let password = data.get("password").unwrap();
+    if let Ok(user) = conn.insert_user(name.into(), password.into()).await {
+        let claims = Claims::new(user.id, user.name);
+        let token = claims.generate();
+        let user = User {
+            id: user.id,
+            username: name.into(),
+            token: Some(token),
+        };
 
-    match conn.insert_user(name.into(), password.into()).await {
-        Ok(user) => (
-            StatusCode::OK,
-            Json(Some(User {
-                id: user.id,
-                username: user.name,
-                token: None,
-            })),
-        ),
-        Err(_) => (StatusCode::BAD_REQUEST, Json(None)),
+        return (StatusCode::OK, Json(Some(user)));
     }
+
+    return (StatusCode::BAD_REQUEST, Json(None));
 }
