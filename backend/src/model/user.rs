@@ -6,3 +6,8 @@ pub struct User {
     pub username: String,
     pub token: Option<String>,
 }
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct UserResponse {
+    pub user: User,
+}

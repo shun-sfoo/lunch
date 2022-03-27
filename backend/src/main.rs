@@ -10,7 +10,7 @@ use error::AppError;
 use sea_orm::{Database, DatabaseConnection};
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::handler::{me, register};
+use crate::handler::{fake_projects, fake_users, me, register};
 mod ar;
 mod error;
 mod handler;
@@ -40,6 +40,8 @@ async fn main() -> Result<(), AppError> {
         .route("/", get(login))
         .route("/me", get(me))
         .route("/register", post(register))
+        .route("/projects", get(fake_projects))
+        .route("/users", get(fake_users))
         .layer(Extension(conn))
         .layer(cors);
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));

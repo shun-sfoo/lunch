@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
 use axum::{extract::Extension, Json};
-use reqwest::StatusCode;
 use sea_orm::DbConn;
 use tracing::info;
 
 use crate::{
-    model::{Claims, User},
+    model::{Claims, User, UserResponse},
     service::{ClaimService, UserService},
 };
 
@@ -25,7 +24,7 @@ pub async fn me(claims: Claims, Extension(ref conn): Extension<DbConn>) -> Json<
 pub async fn register(
     Json(data): Json<HashMap<String, String>>,
     Extension(ref conn): Extension<DbConn>,
-) -> (StatusCode, Json<Option<User>>) {
+) -> Result<Json<UserResponse>, &'static str> {
     //todo genarate token
     info!(?data);
     let name = data.get("username").unwrap();
@@ -39,8 +38,28 @@ pub async fn register(
             token: Some(token),
         };
 
-        return (StatusCode::OK, Json(Some(user)));
+        return Ok(Json(UserResponse { user }));
     }
 
-    return (StatusCode::BAD_REQUEST, Json(None));
+    return Err("err");
+}
+
+pub async fn fake_users() -> Json<Vec<User>> {
+    let mut users = Vec::new();
+    let user1 = User {
+        id: 1,
+        username: "123".into(),
+        token: None,
+    };
+
+    let user2 = User {
+        id: 2,
+        username: "124".into(),
+        token: None,
+    };
+
+    users.push(user1);
+    users.push(user2);
+
+    Json(users)
 }

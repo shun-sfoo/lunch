@@ -1,3 +1,5 @@
+mod project;
 mod user;
 
-pub use user::{me, register};
+pub use project::fake_projects;
+pub use user::{fake_users, me, register};
